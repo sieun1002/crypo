@@ -10,6 +10,24 @@ mpz_class urandomm(gmp_randstate_t state, const mpz_class n);
 int cmp(mpz_class A, mpz_class B);
 
 int main(){
+  mpz_class xA;
+  mpz_class xB;
+  mpz_class pubA;
+  mpz_class pubB;
+  mpz_class KA;
+  mpz_class KB;
+
+  mpz_class p {"0xFFFFFFFFFFFFFFFFADF85458A2BB4A9AAFDC5620273D3CF1D8B9C583CE2D3695A9E13641146433FBCC939DCE249B3ER97D2FE363630C75D8F681B202"};
+  mpz_class g = 2;
+
+  ////////////
+  /*Generating public keys*/
+  /*Alice*/
+  xA = urandomm(state, p);
+  pubA = powm(g, xA, p);
+  /*Bob*/
+  xB = urandomm(state, p);
+  pubB = powm(g, xB, p);
 
 }
 

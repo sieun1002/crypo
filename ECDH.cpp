@@ -39,12 +39,16 @@ int main(){
   EC_double(E, &R, A);
   cout <<"2A = " << "(" << R.x << "," << R.y << ")" << endl;
 
+  EC_mult(E, &R, A, 7);
+  cout <<"7A = " << "(" << R.x << "," << R.y << ")" << endl;
+
+
   return 0;
 }
 
 int mod_inv(int x, int mod){
   int r;
-
+  
   if (x == 0)
     return 0; //infinity
   else if(mod <= 0)
@@ -67,31 +71,46 @@ int mod_inv(int x, int mod){
 void EC_add(EC E, Point *R, Point P, Point Q){
   int r;
 
-  r=mod_inv((Q.x-P.x), E.p);
-
-  if(r==0) /**infinity*/{
-    R->x=0;
-    R->y=0;
+  if(P.x == 0 && P.y == 0){
+    //R->x = Q.x;
+    //R->y = Q.y
+    *R = Q;
   }
 
-  else if(r<0)
-    cout<<"error"<<endl;
+  else if(Q.x == 0 && Q.y == 0){
+    //R->x = P.x;
+    //R->y = P.y;
+    *R = P;
+  }
 
   else{
-    r*=(Q.y-P.y);
-    r%=E.p;
+    r=mod_inv((Q.x-P.x), E.p);
 
-    R->x=(r*r-P.x-Q.x);
-    while(R->x < 0){
-      R->x += E.p;
+    if(r==0) /**infinity*/{
+      R->x=0;
+      R->y=0;
     }
-    R->x %= E.p;
 
-    R->y = r*(P.x - R->x) - P.y;
-    while(R->y < 0){
-      R->y += E.p;
+    else if(r<0)
+      cout<<"error"<<endl;
+
+    else{
+      r*=(Q.y-P.y);
+      r%=E.p;
+
+      R->x=(r*r-P.x-Q.x);
+      while(R->x < 0){
+        R->x += E.p;
+      }
+      R->x %= E.p;
+
+      R->y = r*(P.x - R->x) - P.y;
+      while(R->y < 0){
+        R->y += E.p;
+      }
+      R->y %= E.p;
     }
-    R->y %= E.p;
+  
   }
 }
 

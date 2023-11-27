@@ -6,6 +6,7 @@ using namespace std;
 
 #define ROUND 10 //AES-128
 #define N 4 //key size in words
+#define BLOCK_SIZE 16
 
 void print_state(unsigned char *state);
 void shift_rows(unsigned char *msg);

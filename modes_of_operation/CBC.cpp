@@ -1,4 +1,9 @@
 #include "./AES.h"
+#include <iostream>
+#include <vector>
+#include <gmpxx.h>
+
+using namespace std;
 
 void AES_CBC_encrypt(unsigned char *ct, unsigned char *pmsg, int len, unsigned char *iv, unsigned char *key);
 void AES_CBC_decrypt(unsigned char *dmsg, unsigned char *ct, int len, unsigned char *iv, unsigned char *key);

@@ -25,43 +25,79 @@ mpz_class nextprime(mpz_class x);
 mpz_class lcm(mpz_class a, mpz_class b);
 mpz_class gcd(mpz_class a, mpz_class b);
 int cmp(mpz_class a, mpz_class b);
+mpz_class mod(mpz_class x, mpz_class mod);
 
 //본 함수
 void RSA_keygen(RSA_PK *pk, RSA_SK *sk, int key_size);
 mpz_class encrypt(RSA_PK pk, mpz_class msg);
 mpz_class decrypt(RSA_SK sk, mpz_class ct);
+mpz_class RSA_sign(RSA_SK sk, mpz_class msg);
+bool RSA_verify(RSA_PK pk, mpz_class sig, mpz_class msg);
+mpz_class RSA_decrypt_CRT(RSA_SK sk, mpz_class ct);
 
 
 
 int main(){
   //encrypt(), decrypt() 함수 테스트
-  RSA_PK pk;
-  RSA_SK sk;
+  // RSA_PK pk;
+  // RSA_SK sk;
+
+  // RSA_keygen(&pk, &sk, 2048);
+
+  // mpz_class msg = 4;
+  // mpz_class ct = encrypt(pk, msg);
+  // mpz_class newmsg = decrypt(sk, ct);
+
+  // cout<<"msg = "<<msg<<endl;
+  // cout<<"ct = "<<ct<<endl;
+  // cout<<"newmsg = "<<newmsg<<endl;
+
+  // if(cmp(msg, newmsg) == 0)
+  //   cout<<"success"<<endl;
+  // else
+  //   cout<<"fail"<<endl;
+
+  //RSA_sign(), RSA_verify() 함수 확인
+  // bool rop;
+  // mpz_class msg;
+  // mpz_class sig; 
+  // struct RSA_PK pk;
+  // struct RSA_SK sk; 
+
+  // msg = mpz_class{"0x143214324234"};
+
+  // RSA_keygen(&pk, &sk, 2048);
+  // sig = RSA_sign(sk, msg);
+  // rop = RSA_verify(pk, sig, msg);
+
+  // if(rop==true)
+  //   cout<<"true"<<endl;
+  // else if(rop==false)
+  //   cout<<"false"<<endl;
+  // else 
+  //   cout<<"error"<<endl;
+
+  //RSA_decrypt_CRT() 함수 확인
+  bool rop;
+  mpz_class msg;
+  mpz_class ct; 
+  mpz_class dec;
+  struct RSA_PK pk;
+  struct RSA_SK sk; 
+  msg = mpz_class{"0x143214324234"};
 
   RSA_keygen(&pk, &sk, 2048);
+  ct = encrypt(pk, msg);
+  dec = RSA_decrypt_CRT(sk, ct); 
 
-  mpz_class msg = 4;
-  mpz_class ct = encrypt(pk, msg);
-  mpz_class newmsg = decrypt(sk, ct);
-
-  cout<<"msg = "<<msg<<endl;
-  cout<<"ct = "<<ct<<endl;
-  cout<<"newmsg = "<<newmsg<<endl;
-
-  if(cmp(msg, newmsg) == 0)
+  if(cmp(msg, dec) == 0)
     cout<<"success"<<endl;
   else
-    cout<<"fail"<<endl;
+    cout<<"faild"<<endl;
 
 
-  // random_prime() 함수 테스트
-  // mpz_class x;
 
-  // x = random_prime(1024);
-  // cout<<x<<endl;
-
-  // cout<<mpz_probab_prime_p(x.get_mpz_t(), 50)<<endl;
-  // return 0;
+ 
 }
 
 //wrapper 함수
@@ -98,6 +134,12 @@ mpz_class lcm(mpz_class a, mpz_class b){
 mpz_class gcd(mpz_class a, mpz_class b){
   mpz_class r;
   mpz_gcd(r.get_mpz_t(), a.get_mpz_t(), b.get_mpz_t());
+  return r;
+}
+
+mpz_class mod(mpz_class x, mpz_class mod){
+  mpz_class r;
+  mpz_mod(r.get_mpz_t(),x.get_mpz_t(), mod.get_mpz_t());
   return r;
 }
 
@@ -162,4 +204,34 @@ int cmp(mpz_class a, mpz_class b){
   int r;
   r = mpz_cmp(a.get_mpz_t(), b.get_mpz_t());
   return r;
+}
+
+mpz_class RSA_sign(RSA_SK sk, mpz_class msg){
+  mpz_class sig;
+  sig = powm(msg, sk.d, sk.N);
+  return sig;
+}
+
+bool RSA_verify(RSA_PK pk, mpz_class sig, mpz_class msg){
+  mpz_class r;
+  r = powm(sig, pk.e, pk.N);
+  if(cmp(r, msg) == 0)
+    return true;
+  else 
+    return false;
+}
+
+mpz_class RSA_decrypt_CRT(RSA_SK sk, mpz_class ct){
+  mpz_class m1, m2;
+  mpz_class M1_inv, M2_inv;
+  mpz_class msg; 
+  m1 = powm(ct, sk.d, sk.p);
+  m2 = powm(ct, sk.d, sk.q);
+  M1_inv = mod_inv(sk.q, sk.p);
+  M2_inv = mod_inv(sk.p, sk.q); 
+  msg = (m1*sk.q*M1_inv);
+  msg = mod(msg, sk.N);
+  msg += (m2*sk.p*M2_inv);
+  msg = mod(msg, sk.N);
+  return msg;
 }

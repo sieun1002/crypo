@@ -1,97 +1,69 @@
-#include <gmpxx.h>
 #include <iostream>
+#include <vector>
+#include <gmpxx.h>
 #include <cstring>
 
 using namespace std;
 
 #define ROUND 10 //AES-128
-#define N 4 //key size in words
+#define N 4 //key size in words;
 
 void print_state(unsigned char *state);
+
+void sub_bytes(unsigned char *msg);
+void inv_sub_bytes(unsigned char *msg);
 void shift_rows(unsigned char *msg);
 void inv_shift_rows(unsigned char *msg);
-void sub_bytes(unsigned char *msg);
 unsigned char doub(unsigned char c);
 void mix_columns(unsigned char *msg);
 void inv_mix_columns(unsigned char *msg);
-
+void add_round_key(unsigned char *msg, unsigned char round_key[ROUND+1][16] ,int round);
 void key_schedule(unsigned char *key, unsigned char round_key[ROUND+1][16]);
-void add_round_key(unsigned char *msg, unsigned char round_key[ROUND+1][16], int round);
 
 void AES_encrypt(unsigned char *msg, unsigned char *key, unsigned char *ct);
-void AES_decrypt(unsigned char *ct, unsigned char *key, unsigned char *msg);
+void AES_decrypt(unsigned char *Ct, unsigned char *key, unsigned char *msg);
 
+int main(){
+  unsigned char msg[16] = {0x04, 0x00, 0x12, 0x18, 
+                          0x02, 0x11, 0x18, 0x0F, 
+                          0x13, 0x0E, 0x06, 0x11,
+                          0x00, 0x0F, 0x07, 0x18};
 
-int main()
-{
-    unsigned char msg[16] = {0x04, 0x00, 0x12, 0x18,
-                            0x02, 0x11, 0x18, 0x0F,
-                            0x13, 0x0E, 0x06, 0x11,
-                            0x00, 0x0F, 0x07, 0x18};
+  unsigned char key[16] = {0x54, 0x68, 0x61, 0x74,
+							            0x73, 0x20, 0x6D, 0x79,
+							            0x20, 0x4B, 0x75, 0x6E,
+							            0x67, 0x20, 0x46, 0x75};
 
-    unsigned char key[16] = {0x54, 0x68, 0x61, 0x74, 
-                            0x73, 0x20, 0x6D, 0x79,
-                            0x20, 0x4B, 0x75, 0x6E, 
-                            0x67, 0x20, 0x46, 0x75};
-    
-    unsigned char ct[16];
+  unsigned char ct[16];
 
-    // print_state(msg);
-    // printf("\n");
-    // shift_rows(msg);
-    // print_state(msg);
-    // printf("\n");
-    // inv_shift_rows(msg);
-    // print_state(msg);
-    // printf("\n");
-    // return 0;
+  print_state(msg);
+  printf("\n");
 
+  AES_encrypt(msg, key, ct);
+  print_state(ct);
+  printf("\n");
+
+  AES_decrypt(ct, key, msg);
+  print_state(msg);
+  printf("\n");
+
+	return 0;
 }
 
-void print_state(unsigned char *state)
-{
-    int i;
-    for(i=0; i<N ;i++){
-        printf("0x%02X ", state[i]);
-        printf("0x%02X ", state[i+4]);
-        printf("0x%02X ", state[i+8]);
-        printf("0x%02X ", state[i+12]);
-        printf("\n");
-    }
+void print_state(unsigned char *state){
+  int i;
+  for(i = 0; i<N; i++){
+    printf("0x%02X ", state[i]);
+    printf("0x%02X ", state[i+4]);
+    printf("0x%02X ", state[i+8]);
+    printf("0X%02X ", state[i+12]);
+    printf("\n");
+  }
 }
 
-void shift_rows(unsigned char *msg)
-{
-    unsigned char temp, temp2;
-    
-    temp = msg[1];
-    msg[1] = msg[5]; msg[5] = msg[9]; msg[9] = msg[13]; msg[13] = temp;
-
-    temp = msg[2]; temp2 = msg[6];
-    msg[2] = msg[10]; msg[6] = msg[14]; msg[10] = temp; msg[6] = temp2;
-
-    temp = msg[15];
-    msg[15] = msg[11]; msg[11] = msg[7]; msg[7] = msg[3]; msg[3] = temp;
-}
-
-void inv_shift_rows(unsigned char *msg)
-{
-    unsigned char tmp, tmp2;
-
-    tmp = msg[13];
-    msg[13] = msg[9]; msg[9] = msg[5]; msg[5] = msg[1]; msg[1] = tmp;
-
-    tmp = msg[10]; tmp2 = msg[14];
-    msg[10] = msg[2]; msg[14] = msg[6]; msg[2] = tmp; msg[6] = tmp2;
-
-    tmp = msg[3];
-    msg[3] = msg[7]; msg[7] = msg[11]; msg[11] = msg[15]; msg[15] = tmp;
-}
-
-void sub_bytes(unsigned char *msg)
-{
-    unsigned char sbox[256] = {
-        0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
+void sub_bytes(unsigned char *msg){
+  unsigned char sbox[256] = {
+		0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
 		0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
 		0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 
 		0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -123,15 +95,15 @@ void sub_bytes(unsigned char *msg)
 		0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
 		0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68,
 		0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    };
+	};
+
   for(int i=0; i<16; i++){
     msg[i] = sbox[msg[i]];
   }
 }
 
-void inv_sub_bytes(unsigned char *msg)
-{
-    unsigned char inv_sbox[256] = {
+void inv_sub_bytes(unsigned char *msg){
+  unsigned char inv_sbox[256] = {
 		0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
 		0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
 		0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 
@@ -165,72 +137,103 @@ void inv_sub_bytes(unsigned char *msg)
 		0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26,
 		0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d 
 	};
+
   for(int i=0; i<16; i++){
     msg[i] = inv_sbox[msg[i]];
   }
 }
 
+void shift_rows(unsigned char *msg)
+{
+    unsigned char tmp, tmp2;
+    tmp = msg[1];
+    msg[1] = msg[5]; msg[5] = msg[9]; msg[9] = msg[13]; msg[13] = tmp;
+
+    tmp = msg[2]; tmp2 = msg[6];
+    msg[2] = msg[10]; msg[6] = msg[14]; msg[10] = tmp; msg[14] = tmp2;
+
+    tmp = msg[15];
+    msg[15] = msg[11]; msg[11] = msg[7]; msg[7] = msg[3]; msg[3] = tmp;
+}
+
+void inv_shift_rows(unsigned char *msg)
+{
+    unsigned char tmp, tmp2;
+    tmp = msg[13];
+    msg[13] = msg[9]; msg[9] = msg[5]; msg[5] = msg[1]; msg[1] = tmp;
+
+    tmp = msg[10]; tmp2 = msg[14];
+    msg[14] = msg[6]; msg[10] = msg[2]; msg[6] = tmp2; msg[2] = tmp;
+
+    tmp = msg[3];
+    msg[3] = msg[7]; msg[7] = msg[11]; msg[11] = msg[15]; msg[15] = tmp;
+}
+
 unsigned char doub(unsigned char c){
-  bool left_most_bit = c&1<<7;
+  bool left_most_bit = c & 1<<7;
   c = c<<1;
   if(left_most_bit)
-    c = c^0x1b;
+    c ^= 0x1b;
   return c;
 }
 
 void mix_columns(unsigned char *msg){
-  unsigned char mix[4][4] = 
-    {{2, 3, 1, 1}, {1, 2, 3, 1}, {1, 1, 2, 3}, {3, 1, 1, 2}};
-  unsigned char c[4], d, result[16];
+    unsigned char mix[4][4] = 
+        {{2, 3, 1, 1}, {1, 2, 3, 1}, {1, 1, 2, 3}, {3, 1, 1, 2}};
+    unsigned char c[4], d, result[16];
 
-  for(int y=0; y<4; y++){ //row of mix
-    for(int x=0; x<4; x++){ //column of msg
-      for(int i=0; i<4; i++){ //index in each column
-        d= msg[4*x + i];
+    for(int y=0; y<4; y++){
+      for(int x=0; x<4; x++){
+        for(int i=0; i<4; i++){
+          d = msg[4*x+i];
+        //   switch(mix[y][i]){
+        //     case 1: c[i] = d; break;
+        //     case 2: c[i] = d<<1; break;
+        //     case 3: c[i] = d<<1 ^ d; break;
+        //   }if((mix[y][i] != 1) && (d & 1<<7))
+        //     c[i] = c[i] ^ 0x1b;
+        // }
+
         switch(mix[y][i]){
-          case 1: c[i] = d; break;
-          case 2: c[i] = d<<1; break;
-          case 3: c[i] = d<<1 ^ d; break;
+            case 1: c[i] = d; break;
+            case 2: c[i] = doub(d); break;
+            case 3: c[i] = doub(d) ^ d; break;
+          }
         }
-        if((mix[y][i] != 1) && (d&1<<7))
-          c[i] = c[i] ^ 0x1b;
+        result[4*x+y] = c[0]^c[1]^c[2]^c[3];
       }
-    result[y+x*4];
     }
-  }
-
-
-  memcpy(msg, result, 16);
+    memcpy(msg, result, 16);
 }
 
 void inv_mix_columns(unsigned char *msg){
-  unsigned char mix[4][4] = 
-    {{14, 11, 13, 9}, {9, 14, 11, 13}, {13, 9, 14, 11}, {11, 13, 9, 14}};
-  unsigned char c[4], d, result[16];
+  unsigned char inv_mix[4][4] = 
+      {{14, 11, 13, 9}, {9, 14, 11, 13}, {13, 9, 14, 11}, {11, 13, 9, 14}};
+  unsigned char d, c[4], result[16];
 
-  for(int y=0; y<4; y++){ //row of mix
-    for(int x=0; x<4; x++){ //column of msg
-      for(int i=0; i<4; i++){ //index in each column
-        d= msg[4*x + i];
-        switch(mix[y][i]){
-          case 9: c[i] =  doub(doub(doub(d)))^d; break;
-          case 11: c[i] = doub(doub(doub(d)^d))^d; break;
+  for(int y=0; y<4; y++){
+    for(int x=0; x<4; x++){
+      for(int i=0; i<4; i++){
+        d = msg[4*x+i];
+        switch(inv_mix[y][i]){
+          case 9: c[i] = doub(doub(doub(d)))^d; break;
+          case 11: c[i] = doub(doub(doub(d))^d)^d; break;
           case 13: c[i] = doub(doub(doub(d)^d))^d; break;
           case 14: c[i] = doub(doub(doub(d)^d)^d); break;
         }
       }
-    result[y+x*4];
+      result[4*x+y] = c[0]^c[1]^c[2]^c[3];
     }
   }
-
-
   memcpy(msg, result, 16);
 }
 
-
 void key_schedule(unsigned char *key, unsigned char round_key[ROUND+1][16]){
+  unsigned char rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10,
+                            0x20, 0x40, 0x80, 0x1B, 0x36};
+
   unsigned char sbox[256] = {
-        0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
+		0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
 		0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
 		0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 
 		0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -262,51 +265,33 @@ void key_schedule(unsigned char *key, unsigned char round_key[ROUND+1][16]){
 		0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
 		0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68,
 		0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    };
+	};
 
-    unsigned char rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+  memcpy(round_key[0], key, 16);
+  unsigned char *p = &round_key[1][0];
 
-    memcpy(round_key[0], key, 16);
+  for(int i=0; i<ROUND; i++){
+    //rotword
+    *p = *(p-3);
+    *(p+1) = *(p-2);
+    *(p+2) = *(p-1);
+    *(p+3) = *(p-4);
 
-    for(int i=0; i<ROUND; i++){
-      unsigned char *p = &round_key[i+1][0];
-      //RotWord
-      *p = *(p-3);
-      *(p+1) = *(p-2);
-      *(p+2) = *(p-1);
-      *(p+3) = *(p-4);
+    //subword
+    for(int j=0; j<4; j++)
+      *(p+j) = sbox[*(p+j)]; 
 
-      //SubWord
-      for(int k=0; k<4; k++){
-        *(p+k) = sbox[*(p+k)];
-      }
-
-      //시은 코드
-      //xor rcon
-      *p ^= rcon[i];
-
-      //xor w
-      for(int k=0; k<4; k++, p++){
-        *p ^= *(p-16);
-      }
-      //시은 코드 끝 (교수님이랑 다른 부분)
-
-      //교수님 코드
-          //xor rcon
-      for(int j=0; j<4; j++, p++){
-        if(j==0)
-          *p^=rcon[i];
-        *p ^= *(p-16);
-      }
-      //교수님 코드 끝
-
-      //xor 나머지
-      for(int k=0; k<12; k++, p++){
-        *p ^= *(p-16);
-        *p ^= *(p-4);
-      }
-
+    //rcon
+    for(int j=0; j<4; j++, p++){
+      if(j==0)
+        *p ^= rcon[4*i/N];
+      *p ^= *(p-4*N);
     }
+
+    //12 left
+    for(int j=0; j<3*N; j++, p++)
+      *p = *(p-4*N) ^ *(p-4);
+  }
 }
 
 void add_round_key(unsigned char *msg, unsigned char round_key[ROUND+1][16], int round){
@@ -319,6 +304,14 @@ void AES_encrypt(unsigned char *msg, unsigned char *key, unsigned char *ct){
   memcpy(ct, msg, 16);
 
   key_schedule(key, round_key);
+  // for(int i=0; i<ROUND+1; i++){
+  //   for(int j=0; j<16; j++){
+  //       printf("0x%02X ", round_key[i][j]); 
+  //   }
+  //   printf("\n");
+  // }
+  // printf("\n");
+
   add_round_key(ct, round_key, 0);
 
   for(int i=1; i<ROUND; i++){
@@ -330,7 +323,6 @@ void AES_encrypt(unsigned char *msg, unsigned char *key, unsigned char *ct){
 
   sub_bytes(ct);
   shift_rows(ct);
-  mix_columns(ct);
   add_round_key(ct, round_key, ROUND);
 }
 
